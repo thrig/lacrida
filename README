@@ -1,3 +1,31 @@
-la crida
+lacrida
+=======
 
-a LISP 2020 spring game jam game?
+a Spring Lisp Game Jam 2020 game
+
+requires
+
+ * SBCL (this code is largely untested on other implementations though
+   did load in Clozure Common Lisp at some point during development)
+ * alexandria, cl-charms. assuming Quicklisp is installed:
+
+    cd ~/quicklisp/local-projects
+    git checkout https://github.com/thrig/lacrida
+    cd lacrida
+    printf "\033[8;24;80t"
+    ./run
+
+ * there is minimal documentation; copy lacrida.6 into a suitable
+   MANPATH directory (e.g. /usr/local/share/man/man6) and then run
+
+    man 6 lacrida
+
+ * keybindings are traditional to rogue(6) though can be fiddled with in
+   definitions.lisp if need be
+
+sources
+
+ * the initial commit code is from work done mostly back in June 2019
+   that has a grid to move around in and not much more
+ * shadowcast FOV code adapted from https://github.com/thrig/cl-fov
+ * various terminal related code from https://github.com/thrig/cl-minterm

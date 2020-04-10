@@ -1,0 +1,14 @@
+#|
+eval 'exec sbcl --script "$0" ${1+"$@"}'
+|#
+
+#-quicklisp
+(let ((quicklisp-init (merge-pathnames "quicklisp/setup.lisp"
+                                       (user-homedir-pathname))))
+  (when (probe-file quicklisp-init)
+    (load quicklisp-init)))
+
+(ql:quickload :lacrida :silent t)
+
+(in-package :lacrida)
+(start-game)

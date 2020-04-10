@@ -1,10 +1,15 @@
 (asdf:defsystem #:lacrida
-  :description "maybe a game"
+  :description "a LISP 2020 spring game jam game"
   :author "Jeremy Mates <jeremy.mates@gmail.com>"
-  :license "BSD"
+  :license "ISC"
   :version "0.0.1"
   :serial t
-  :depends-on (#:cl-minterm)
-  :components ((:file "lacrida")
-               (:static-file "README")
-               (:static-file "LICENSE")))
+  :depends-on (#:alexandria #:cl-charms)
+  :components ((:static-file "README")
+               (:static-file "LICENSE")
+               (:file "package")
+               (:file "definitions" :depends-on ("package"))
+               (:file "message" :depends-on ("package"))
+               (:file "structures" :depends-on ("package" "message"))
+               (:file "main" :depends-on ("package" "definitions"
+                                          "structures" "message"))))

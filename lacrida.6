@@ -1,0 +1,62 @@
+.Dd April 19 2020
+.Dt LACRIDA 6
+.nh
+.Os
+.Sh NAME
+.Nm lacrida
+.Nd exploring the Garden of some Wizard
+.Sh SYNOPSIS
+.Bk -words
+.Nm
+.Ek
+.Sh DESCRIPTION
+.Nm
+is a computer fantasy game. The object of the game is to obtain food
+scattered throughout the garden of some Wizard, and to ideally
+escape unharmed.
+.Ss \&An Overview of the Garden
+You are represented by the
+.Qq @
+symbol, and may move about using commands traditional to
+.Xr rogue 6 .
+The various other symbols should hopefully be more or less recognizable
+to those familiar with the genre.
+.Ss Commands
+.Bl -tag -width Ds
+.It Cm h
+Move left.
+.It Cm j
+Move down.
+.It Cm k
+Move up.
+.It Cm l
+Move right.
+.It Cm y
+Move up and left.
+.It Cm u
+Move up and right.
+.It Cm b
+Move down and left.
+.It Cm n
+Move down and right.
+.It Cm g
+Pick something up.
+.It Cm \&.
+Wait for a turn.
+.It Cm Q
+Quit the game without saving.
+.El
+.Sh EXIT STATUS
+Whatever the Common LISP implementation exits with.
+.Sh SEE ALSO
+.Xr Game::PlatformsOfPeril 3p ,
+.Xr Game::Xomb 3p ,
+.Xr rogue 6
+.Sh HISTORY
+Spring Lisp Game Jame 2020
+.Pp
+https://itch.io/jam/spring-lisp-game-jam-2020
+.Sh AUTHORS
+Jeremy Mates
+.Sh CAVEATS
+Lots. Don't resize the window during the game, for one.
