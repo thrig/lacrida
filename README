@@ -10,7 +10,7 @@ requires
  * alexandria, cl-charms. assuming Quicklisp is installed:
 
     cd ~/quicklisp/local-projects
-    git checkout https://github.com/thrig/lacrida
+    git clone https://github.com/thrig/lacrida
     cd lacrida
     printf "\033[8;24;80t"
     ./run
