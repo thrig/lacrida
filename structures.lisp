@@ -535,7 +535,8 @@
 ; maybe the Wizard needs more pets?
 ;
 ; TODO line function is really bad at pathing to player along certain
-; diagonals, fix or instead follow a graph
+; diagonals, fix or instead follow a graph (but monsters getting stuck
+; is mostly how the player can stay alive...)
 (defun update-golem (ani)
   (let* ((col (animate-col ani))
          (row (animate-row ani))
@@ -547,7 +548,7 @@
           (done-path (msg)))
         *golem-cost*)
       ; sleep until player might be close enough to consider moving
-      (* (1+ d) 10))))
+      (max *golem-cost* (* d 10)))))
 
 (defmacro make-golem (col row)
   `(let ((mons
