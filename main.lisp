@@ -171,7 +171,7 @@
   (emit-at (1+ +show-cols+) 13 (format nil "  P - Fungus   # - Wall"))
   (emit-at (1+ +show-cols+) 14 (format nil "  ~a - Tree     ~a - Water" #\GREEK_CAPITAL_LETTER_PSI #\~))
   (emit-at (1+ +show-cols+) 15 (format nil "  . - Floor    , - Rubble"))
-  (emit-at (1+ +show-cols+) 16 (format nil "  ! - Food"))
+  (emit-at (1+ +show-cols+) 16 (format nil "  ! - Food     ~a - Entrance (and exit)" #\GREEK_CAPITAL_LETTER_PI))
   (norm)
   (post-message "Found an entrance to ~a's garden..." *wizard*)
   (post-message "There is a note written here:")

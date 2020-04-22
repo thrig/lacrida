@@ -104,6 +104,7 @@
      (setf (gethash (cons ,col ,row) *item-locs*) item)))
 
 (defmethod item-interact ((ff food) newcol newrow cost)
+  (post-message "You see here a ~a" (slot-value ff 'name))
   (relocate-hero newcol newrow)
   (values :action-ok 10))
 
@@ -382,7 +383,8 @@
   (let ((offx (- col *hero-col*)) (offy (- row *hero-row*)))
     (unless (and (zerop offx) (zerop offy) is-veggie)
       (emit-at (+ offx +col-offset+) (+ offy +row-offset+)
-       (cast-display col row)))))
+       (cast-display col row))
+      (finish-output))))
 
 ; TODO really need a FOV object can say "hey something happened at cell
 ; x" then let that figure out if display or what
@@ -543,7 +545,7 @@
         (handler-case
           (bline ani #'hunt-player col row *hero-col* *hero-row*)
           (done-path (msg)))
-        20)
+        *golem-cost*)
       ; sleep until player might be close enough to consider moving
       (* (1+ d) 10))))
 

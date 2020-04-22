@@ -1,13 +1,17 @@
 lacrida
 =======
 
-a Spring Lisp Game Jam 2020 game
+a Spring Lisp Game Jam 2020 game (use version 0.0.1 for that code)
 
 requires
 
- * SBCL (this code is largely untested on other implementations though
-   did load in Clozure Common Lisp at some point during development)
- * alexandria, cl-charms. assuming Quicklisp is installed:
+ * a terminal with dimensions of at least 80x24
+ * SBCL (Clozure Common Lisp complains about the "BLACK_CLUB_SUIT" and
+   other fancy characters used in structures.lisp; not sure how to make
+   those portable)
+ * the alexandria and cl-charms packages
+
+assuming Quicklisp is installed and setup:
 
     cd ~/quicklisp/local-projects
     git clone https://github.com/thrig/lacrida
@@ -22,6 +26,7 @@ requires
 
  * keybindings are traditional to rogue(6) though can be fiddled with in
    definitions.lisp if need be
+ * the ./compile script should produce a (very large) binary
 
 sources
 

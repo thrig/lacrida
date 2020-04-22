@@ -78,14 +78,16 @@
 ; visible cells
 (defparameter *hero-fov* 5)
 
-(defparameter *mons-fov* 4)
+(defparameter *mons-fov* 6)
+; monster move speed (10 is player move speed)
+(defparameter *golem-cost* 10)
 
 (defparameter *scrumped* nil)
 ; how soon and then how much thereafter to spawn a Golem at the exit
 ; point if the player has stolen something (lower values == harder
 ; game); value is in energy units so 10 per turn
 (defparameter *triggered* nil)
-(defparameter *alarm-trigger* 20)
+(defparameter *alarm-trigger* 40)
 (defparameter *alarm-refresh* 1000)
 
 (defparameter *exit-row* nil)
