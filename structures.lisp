@@ -210,10 +210,6 @@
 ; Chebyshev distance
 (defun distance (x0 y0 x1 y1) (max (abs (- x1 x0)) (abs (- y1 y0))))
 
-; PATHFIX
-;(defun adjacent-cells (cb startx starty)
-;  (
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
 ; Vaults
@@ -380,11 +376,14 @@
          (map-display ,x ,y)))))
 
 (defun redraw-cell (col row is-veggie)
-  (let ((offx (- col *hero-col*)) (offy (- row *hero-row*)))
-    (unless (and (zerop offx) (zerop offy) is-veggie)
-      (emit-at (+ offx +col-offset+) (+ offy +row-offset+)
-       (cast-display col row))
-      (finish-output))))
+  (when (< (distance *hero-col* *hero-row* col row) *hero-fov*)
+    (let ((offx (- col *hero-col*)) (offy (- row *hero-row*)))
+      (unless (and (zerop offx) (zerop offy) is-veggie)
+        (setf (aref *view-port* (+ offy +row-offset+) (+ offx +col-offset+))
+                nil)
+        (emit-at (+ offx +col-offset+) (+ offy +row-offset+)
+         (cast-display col row))
+        (finish-output)))))
 
 ; TODO really need a FOV object can say "hey something happened at cell
 ; x" then let that figure out if display or what
@@ -482,8 +481,6 @@
 (defmacro symbol-for (key) `(gethash ,key *keymap*))
 
 (defun update-hero (&optional ani)
-  (shadowcast *hero-col* *hero-row* *hero-fov*)
-  (finish-output)
   (forever
     ; ??? screen blanks if terminal resized
     (let ((key (charms:get-char charms:*standard-window* :ignore-error t)))
@@ -491,7 +488,10 @@
           (status cost)
           (action-for (symbol-for key))
         (finish-output)
-        (when (eq :action-ok status) (return-from update-hero cost))))))
+        (when (eq :action-ok status)
+          (shadowcast *hero-col* *hero-row* *hero-fov*)
+          (finish-output)
+          (return-from update-hero cost))))))
 
 (defun make-hero () (make-instance 'animate :cost 0 :update #'update-hero))
 

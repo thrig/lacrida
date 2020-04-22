@@ -194,6 +194,8 @@
   (generate-world)
   (push (make-instance 'animate :cost *alarm-trigger*
                        :update #'update-alarm) *animates*)
+  (shadowcast *hero-col* *hero-row* *hero-fov*)
+  (finish-output)
   (forever
     (let ((min-cost (least-cost *animates*)))
       (dolist (ani *animates*)

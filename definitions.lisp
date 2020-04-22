@@ -78,7 +78,7 @@
 ; visible cells
 (defparameter *hero-fov* 5)
 
-(defparameter *mons-fov* 6)
+(defparameter *mons-fov* 5)
 ; monster move speed (10 is player move speed)
 (defparameter *golem-cost* 10)
 
