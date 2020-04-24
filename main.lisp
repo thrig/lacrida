@@ -76,10 +76,10 @@
 
 (defmacro ground (r c off1 off2 mul1 mul2)
   `(let ((val
-          (+ (cos (* (- r off1) +mratio+ (1+ (random 3))))
-             (sin (* (- r off2) +mratio+ (1+ (random 3))))
+          (+ (cos (* (- r off1) +mratio+ (1+ (random 2))))
+             (sin (* (- c off2) +mratio+ (1+ (random 3))))
              (cos (* (- r off2) +mratio+ mul1))
-             (sin (* (- r off1) +mratio+ mul2)))))
+             (sin (* (- c off1) +mratio+ mul2)))))
      (cond ((> val 0.5) (pick *fungus*)) ((> val -0.9) *floor*) (t *water*))))
 
 ; entry (and exit...) point
@@ -89,6 +89,7 @@
     (values (+ 2 (random (- +map-cols+ 4))) (if (coinflip) 0 (1- +map-rows+)))))
 
 ; no monsters too close to the entry point at the start
+; NOTE will run increasingly forever if there are too many monsters
 (defun min-monster-dist (col row)
   (loop :for k :being :the :hash-key :in *mons-locs*
         :minimizing (distance col row (car k) (cdr k))))
@@ -152,7 +153,7 @@
         (loop :for rr :from (- row 3) :to (+ row 3) :do
           (loop :for cc :from (- col 3) :to (+ col 3) :do
             (when (and (map-in-bounds-p cc rr)
-                       (eq #\~ (cell-ch (aref *world-map* rr cc))))
+                       (eq #\~ (visible-ch (aref *world-map* rr cc))))
               (setf (aref *world-map* rr cc) *floor*))))
         (return))))
   (when (onein 100)
@@ -192,7 +193,7 @@
   (draw-bg)
   (norm)
   (generate-world)
-  (push (make-instance 'animate :cost *alarm-trigger*
+  (push (make-instance 'entity :cost *alarm-trigger*
                        :update #'update-alarm) *animates*)
   (shadowcast *hero-col* *hero-row* *hero-fov*)
   (finish-output)
@@ -208,8 +209,9 @@
 (defun score () (loop :for x :in *loot* :sum (food-score x)))
 
 (defun farewell ()
-  (format t "You exit the realm of ~a with a score of ~D."
-          *wizard* (score)))
+  (let ((score (score)))
+    (format t "You exit the gardens of ~a with ~D points~a" *wizard*
+            score (if (= score *max-score*) "...FLAWLESS VICTORY" #\.))))
 
 (defun start-game ()
   (handler-case

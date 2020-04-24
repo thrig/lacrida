@@ -1,86 +1,50 @@
 (in-package :lacrida)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-; Map Cells - for different (or generic) needs
-
-; generic cell, no coloring
-; "moveok" is a KLUGE determine whether a monster can traverse the cell,
-; which differs slightly from what the player can use
-(defclass cell nil
-  ((ch :initarg :ch :reader cell-ch :type character)
-   (moveok :initarg :moveok :reader cell-moveok :type boolean)
-   (opaque :initarg :opaque :reader cell-opaque :type boolean)
-   (solid :initarg :solid :reader cell-solid :type boolean))
-  (:documentation "a map cell"))
-
-(defmethod initialize-instance :after ((cc cell) &key)
-  (unless (slot-boundp cc 'ch) (setf (slot-value cc 'ch) #\.))
-  (unless (slot-boundp cc 'moveok) (setf (slot-value cc 'moveok) t))
-  (unless (slot-boundp cc 'opaque) (setf (slot-value cc 'opaque) nil))
-  (unless (slot-boundp cc 'solid) (setf (slot-value cc 'solid) nil)))
-
-
-; vault cells get a specific color
-(defclass vault (cell)
-  ((fg :initarg :fg :type uint8_t)
+(defclass visible nil
+  ((ch :initarg :ch :reader visible-ch :type character)
+   (fg :initarg :fg :type uint8_t)
    (bg :initarg :bg :type uint8_t)
    (weight :initarg :weight :type uint8_t))
-  (:documentation "a map vault cell"))
+  (:documentation "something that can be visible on the map"))
 
-(defmethod initialize-instance :after ((vv vault) &key)
-  (unless (slot-boundp vv 'fg) (setf (slot-value vv 'fg) 15))
-  (unless (slot-boundp vv 'bg) (setf (slot-value vv 'bg) 0))
-  (unless (slot-boundp vv 'weight) (setf (slot-value vv 'weight) 0)))
+(defmethod initialize-instance :after ((vv visible) &key)
+  (slot-defaults vv (ch . #\.) (fg . 15) (bg . 0) (weight . 0)))
 
-
-; plants block LOS variably (a patient player could cheese this?)
-(defclass plant (vault)
-  ((los :initarg :los :type uint8_t))
-  (:documentation "a plant cell"))
-
-(defmethod initialize-instance :after ((pp plant) &key)
-  (unless (slot-boundp pp 'los) (setf (slot-value pp 'los) 25)))
-
-(defmethod cell-opaque ((pp plant)) (ninm (slot-value pp 'los) 100))
-
-
-(defgeneric display (cell)
-  (:documentation "cell contents as a string"))
-
-(defmethod display ((cc cell))
-  (slot-value cc 'ch))
-
-(defmethod display ((vv vault))
+(defmethod display ((vv visible))
   (format nil "~C[~d;38;5;~d;48;5;~dm~a~C[m" #\Esc (slot-value vv 'weight)
           (slot-value vv 'fg) (slot-value vv 'bg) (slot-value vv 'ch) #\Esc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
-; Items
+; Map Cells
+
+; "moveok" is to determine whether a monster can traverse the cell;
+; this differs from the player
+(defclass cell (visible)
+  ((moveok :initarg :moveok :reader cell-moveok :type boolean)
+   (opaque :initarg :opaque :reader cell-opaque :type boolean)
+   (solid :initarg :solid :reader cell-solid :type boolean))
+  (:documentation "a map cell"))
+
+(defmethod initialize-instance :after ((cc cell) &key)
+  (slot-defaults cc (moveok . t) (opaque . nil) (solid . nil)))
+
+; plants block LOS variably (a patient player could cheese this,
+; assuming nothing is chasing after them)
+(defclass plant (cell)
+  ((los :initarg :los :type uint8_t))
+  (:documentation "a plant cell"))
+
+(defmethod initialize-instance :after ((pp plant) &key)
+  (slot-defaults pp (los . 25)))
+
+(defmethod cell-opaque ((pp plant)) (ninm (slot-value pp 'los) 100))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
-; TODO make these inherit from "vault" or something even more generic
-; probably so can share a "get a string display of whatever" method as
-; that's the same code for vaults, items, monsters
+; Food - the player can pick this up
 
-(defclass item nil
-  ((ch :initarg :ch :type character)
-   (fg :initarg :fg :type uint8_t)
-   (bg :initarg :bg :type uint8_t)
-   (weight :initarg :weight :type uint8_t))
-  (:documentation "generic item"))
-
-(defmethod initialize-instance :after ((ii item) &key)
-  (setf (slot-value ii 'fg) 220)
-  (setf (slot-value ii 'bg) 0)
-  (setf (slot-value ii 'weight) 1))
-
-(defmethod display ((ii item))
-  (format nil "~C[~d;38;5;~d;48;5;~dm~a~C[m" #\Esc (slot-value ii 'weight)
-          (slot-value ii 'fg) (slot-value ii 'bg) (slot-value ii 'ch) #\Esc))
-
-; food player can pick up
-(defclass food (item)
+(defclass food (visible)
   ((name :reader food-name)
    (score :reader food-score :type fixnum))
   (:documentation "food item"))
@@ -91,8 +55,8 @@
           ((< roll 11) (values "Truffle" 100))
           (t (values "Mushroom" 10)))))
 
-(defmethod initialize-instance :after ((ff food) &key)
-  (setf (slot-value ff 'ch) #\!)
+(defmethod initialize-instance :before ((ff food) &key)
+  (slot-defaults ff (ch . #\!) (fg . 220) (weight . 1))
   (multiple-value-bind
       (name score)
       (random-food-item)
@@ -101,6 +65,7 @@
 
 (defmacro make-food (col row)
   `(let ((item (make-instance 'food)))
+     (incf *max-score* (food-score item))
      (setf (gethash (cons ,col ,row) *item-locs*) item)))
 
 (defmethod item-interact ((ff food) newcol newrow cost)
@@ -108,43 +73,11 @@
   (relocate-hero newcol newrow)
   (values :action-ok 10))
 
-
-; messages for the player to read
-; TODO as yet unused, remove if not...
-(defclass msg (item)
-  ((text :initarg :text :reader msg-text))
-  (:documentation "messsage item"))
-
-(defmethod initialize-instance :after ((mm msg) &key)
-  (setf (slot-value mm 'ch) #\?))
-
-(defmacro make-message (col row text)
-  `(let ((msg (make-instance 'msg :text ,text)))
-     (setf (gethash (cons ,col ,row) *item-locs*) msg)))
-
-(defmethod item-interact ((mm msg) newcol newrow cost)
-  (post-message "You pause to peruse the message.")
-  (post-message "~a" (slot-value mm 'text))
-  (values :action-fail 10))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
 ; The World Map - more grandly stated than implemented
 
-; viewport concerns
-(defconstant +show-rows+  18)
-(defconstant +show-cols+  31)
-(defconstant +row-offset+ 9)
-(defconstant +col-offset+ 16)
-
-(defconstant +map-rows+ 42)
-(defconstant +map-cols+ 42)
-(defconstant +mratio+ (/ pi +map-rows+))
-
-(defconstant +item-count+ 32)
-(defconstant +mons-count+ 8)
-
-(defparameter *floor* (make-instance 'vault :fg 28))
+(defparameter *floor* (make-instance 'cell :fg 28))
 ; TODO maybe have one fungus obj and it randomizes its color on access?
 (defparameter *fungus*
   (list (make-instance 'plant :ch #\P :fg 223 :opaque t)
@@ -153,13 +86,13 @@
         (make-instance 'plant :ch #\GREEK_CAPITAL_LETTER_PSI :fg 76 :moveok
                        nil :opaque t :los 25)))
 (defparameter *gate1*
-  (make-instance 'vault :ch #\GREEK_CAPITAL_LETTER_PI :moveok t :fg 251))
-(defparameter *lily* (make-instance 'vault :ch #\BLACK_CLUB_SUIT :fg 255))
-(defparameter *rubble* (make-instance 'vault :ch #\, :fg 28))
+  (make-instance 'cell :ch #\GREEK_CAPITAL_LETTER_PI :moveok t :fg 251))
+(defparameter *lily* (make-instance 'cell :ch #\BLACK_CLUB_SUIT :fg 255))
+(defparameter *rubble* (make-instance 'cell :ch #\, :fg 28))
 (defparameter *wall*
-  (make-instance 'vault :ch #\# :fg 251 :moveok nil :opaque t :solid t))
+  (make-instance 'cell :ch #\# :fg 251 :moveok nil :opaque t :solid t))
 (defparameter *water*
-  (make-instance 'vault :ch #\~ :fg 45 :moveok nil :solid t))
+  (make-instance 'cell :ch #\~ :fg 45 :moveok nil :solid t))
 
 (defparameter *world-map* 
   (make-array (list +map-rows+ +map-cols+)
@@ -205,26 +138,26 @@
        (and (array-in-bounds-p *world-map* ,row ,col)
             (aref *seen-map* ,row ,col))
      (format nil "~C[38;5;236m~a~C[m" #\Esc
-             (cell-ch (aref *world-map* ,row ,col)) #\Esc)))
+             (visible-ch (aref *world-map* ,row ,col)) #\Esc)))
 
 ; Chebyshev distance
 (defun distance (x0 y0 x1 y1) (max (abs (- x1 x0)) (abs (- y1 y0))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
-; Vaults
+; Vaults - premade cell sets that can be placed into the map
 
-(defparameter *vfloor* (make-instance 'vault :fg 28 :moveok nil))
+(defparameter *vfloor* (make-instance 'cell :fg 28 :moveok nil))
 (defparameter *celing*
-  (make-instance 'vault :ch #\- :fg 250 :bg 0 :weight 1 :moveok nil :opaque t :solid t))
+  (make-instance 'cell :ch #\- :fg 250 :bg 0 :weight 1 :moveok nil :opaque t :solid t))
 (defparameter *slashf*
-  (make-instance 'vault :ch #\/ :fg 250 :bg 0 :weight 1 :moveok nil :opaque nil :solid t))
+  (make-instance 'cell :ch #\/ :fg 250 :bg 0 :weight 1 :moveok nil :opaque nil :solid t))
 (defparameter *slashb*
-  (make-instance 'vault :ch #\\ :fg 250 :bg 0 :weight 1 :moveok nil :opaque nil :solid t))
+  (make-instance 'cell :ch #\\ :fg 250 :bg 0 :weight 1 :moveok nil :opaque nil :solid t))
 (defparameter *vert*
-  (make-instance 'vault :ch #\| :fg 250 :bg 0 :weight 1 :moveok nil :opaque nil :solid t))
+  (make-instance 'cell :ch #\| :fg 250 :bg 0 :weight 1 :moveok nil :opaque nil :solid t))
 (defparameter *hollow*
-  (make-instance 'vault :ch #\_ :fg 0 :bg 0 :moveok nil :opaque nil :solid nil))
+  (make-instance 'cell :ch #\_ :fg 0 :bg 0 :moveok nil :opaque nil :solid nil))
 
 (defparameter *dolmen*
   (make-array '(4 9) :initial-contents
@@ -257,7 +190,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
 ; Map Agents - used to carve out wandering corridors, more or less
-; borrowed from the ministry-of-silly-vaults code
+; borrowed from the ministry-of-silly-vaults corridors.lisp code
 
 (defparameter *total-moves* 0)
 ; percent of map that can be filled by agents walking out corridors
@@ -348,20 +281,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
-; Animates
+; Entities and Animates
 
-; TODO this needs a more generic form without row/col for invisible tasks
-(defclass animate nil
+(defclass entity nil
   ((cost :initarg :cost :accessor animate-cost :type uint8_t)
-   (update :initarg :update :reader animate-update :type function)
-   (row :initarg :row :accessor animate-row :type uint8_t)
+   (update :initarg :update :reader animate-update :type function))
+  (:documentation "something that uses the energy system"))
+
+(defmethod initialize-instance :after ((ee entity) &key)
+  (unless (slot-boundp ee 'update) (error "no update function provided"))
+  (slot-defaults ee (cost . 0))) ; when their next move is
+
+(defclass animate (entity)
+  ((row :initarg :row :accessor animate-row :type uint8_t)
    (col :initarg :col :accessor animate-col :type uint8_t))
-  (:documentation "an animate"))
+  (:documentation "a visible entity"))
 
-(defmethod initialize-instance :after ((ani animate) &key)
-  (unless (slot-boundp ani 'cost) (setf (slot-value ani 'cost) 0))
-  (unless (slot-boundp ani 'update) (error "no update function provided")))
-
+; with multiple animate types this would inherit from VISIBLE instead of
+; begin golem-coded here
 (defmethod display ((aa animate))
   (format nil "~C[1;38;5;~a;48;5;0mG~C[m" #\Esc
           (if *scrumped* 208 244)
@@ -401,6 +338,10 @@
     "The clay figure does not respond to your touch."
     "The clay figure is cold and solid."))
     "Who would even pay for a statue like this?"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; Some Hero Stuff
 
 ; this may be too subtle a prompt?
 (defmacro prompt (&rest args)
@@ -517,10 +458,14 @@
   (let ((cell (aref *world-map* y x)))
     (when (cell-moveok cell)
       (when (gethash (cons x y) *mons-locs*) (error 'done-path))
-      (when (eq (cell-ch cell) #\P)
-        ; TODO need message if this was nearby, or visible
+      (when (eq (visible-ch cell) #\P)
         (setf (aref *world-map* y x) *rubble*)
         (redraw-cell x y t)
+        ; monster always redrawn as otherwise would (maybe) need to redo
+        ; FOV or line walk to see if player can now see the monster,
+        ; simpler to just redraw it on the assumption the player somehow
+        ; saw the move
+        (redraw-cell (animate-col ani) (animate-row ani) t)
         (error 'done-path))
       (animate-move ani x y)
       (when (and (= x *hero-col*) (= y *hero-row*))

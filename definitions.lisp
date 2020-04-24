@@ -15,6 +15,16 @@
 
 (deftype uint8_t () '(unsigned-byte 8))
 
+(defmacro slot-defaults (obj &rest args)
+  `(progn
+    ,@(mapcan
+       (lambda (arg)
+         (destructuring-bind (slot . value) arg
+           (list
+            `(unless (slot-boundp ,obj ',slot)
+               (setf (slot-value ,obj ',slot) ,value)))))
+       args)))
+
 ; ??? alexandria has a conflicting define-constant but SBCL yells that
 ; {+ALT-SCREEN+ is an already defined constant whose value "" is not
 ; equal to the provided initial value "" under EQL."} if I use it...
@@ -68,6 +78,19 @@
 
 (defmacro forever (&body body) `(do () (nil) ,@body))
 
+; map viewport concerns
+(defconstant +show-rows+  18)
+(defconstant +show-cols+  31)
+(defconstant +row-offset+ 9)
+(defconstant +col-offset+ 16)
+
+(defconstant +map-rows+ 42)
+(defconstant +map-cols+ 42)
+(defconstant +mratio+ (/ pi +map-rows+))
+
+(defconstant +item-count+ 32)
+(defconstant +mons-count+ 8)
+
 ; stuff that has move costs and turn up in the event system
 (defparameter *animates* nil)
 
@@ -100,6 +123,7 @@
 (defparameter *item-locs* (make-hash-table :test #'equal))
 (defparameter *mons-locs* (make-hash-table :test #'equal))
 (defparameter *loot* nil)
+(defparameter *max-score* 0)
 (defparameter *wizard* nil)
 
 (defun wizard-name () (pick '("Deldalf" "Ganfador")))
