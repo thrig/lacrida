@@ -1,4 +1,4 @@
-.Dd April 19 2020
+.Dd April 23 2020
 .Dt LACRIDA 6
 .nh
 .Os
@@ -20,7 +20,25 @@ You are represented by the
 symbol, and may move about using commands traditional to
 .Xr rogue 6 .
 The various other symbols should hopefully be more or less recognizable
-to those familiar with the genre.
+to those familiar with the genre. Food items include:
+.Bl -tag -width Ds
+.It !
+A mushroom.
+.It !
+A truffle (more valuable than a mushroom). Alas, close inspection is
+required to tell these apart from regular mushrooms even though such a
+display difference would be trivial to implement.
+.It >
+The rare and valuable Staircake, a peculiar pastry preferred in dungeon
+designs to form random stair structures throughout. The wizard must
+obviously be growing these to supply nearby dungeons with.
+.El
+.Pp
+Other features of the dungeon may or may not block moves and may or may
+not break line of sight. Water, one might recall, must not be crossed by
+fairy-kind, especially southward-running water. There are also curious
+clay statues that the wizard has left scattered throughout the garden.
+What could those be?
 .Ss Commands
 .Bl -tag -width Ds
 .It Cm h

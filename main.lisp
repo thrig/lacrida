@@ -153,7 +153,7 @@
         (loop :for rr :from (- row 3) :to (+ row 3) :do
           (loop :for cc :from (- col 3) :to (+ col 3) :do
             (when (and (map-in-bounds-p cc rr)
-                       (eq #\~ (visible-ch (aref *world-map* rr cc))))
+                       (eq #\~ (display-ch (aref *world-map* rr cc))))
               (setf (aref *world-map* rr cc) *floor*))))
         (return))))
   (when (onein 100)

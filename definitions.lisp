@@ -15,16 +15,6 @@
 
 (deftype uint8_t () '(unsigned-byte 8))
 
-(defmacro slot-defaults (obj &rest args)
-  `(progn
-    ,@(mapcan
-       (lambda (arg)
-         (destructuring-bind (slot . value) arg
-           (list
-            `(unless (slot-boundp ,obj ',slot)
-               (setf (slot-value ,obj ',slot) ,value)))))
-       args)))
-
 ; ??? alexandria has a conflicting define-constant but SBCL yells that
 ; {+ALT-SCREEN+ is an already defined constant whose value "" is not
 ; equal to the provided initial value "" under EQL."} if I use it...

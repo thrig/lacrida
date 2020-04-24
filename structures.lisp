@@ -1,14 +1,11 @@
 (in-package :lacrida)
 
-(defclass visible nil
-  ((ch :initarg :ch :reader visible-ch :type character)
-   (fg :initarg :fg :type uint8_t)
-   (bg :initarg :bg :type uint8_t)
-   (weight :initarg :weight :type uint8_t))
+(defclass visible ()
+  ((ch :initarg :ch :initform #\. :reader display-ch :type character)
+   (fg :initarg :fg :initform 15 :type uint8_t)
+   (bg :initarg :bg :initform 0 :type uint8_t)
+   (weight :initarg :weight :initform 0 :type uint8_t))
   (:documentation "something that can be visible on the map"))
-
-(defmethod initialize-instance :after ((vv visible) &key)
-  (slot-defaults vv (ch . #\.) (fg . 15) (bg . 0) (weight . 0)))
 
 (defmethod display ((vv visible))
   (format nil "~C[~d;38;5;~d;48;5;~dm~a~C[m" #\Esc (slot-value vv 'weight)
@@ -21,22 +18,16 @@
 ; "moveok" is to determine whether a monster can traverse the cell;
 ; this differs from the player
 (defclass cell (visible)
-  ((moveok :initarg :moveok :reader cell-moveok :type boolean)
-   (opaque :initarg :opaque :reader cell-opaque :type boolean)
-   (solid :initarg :solid :reader cell-solid :type boolean))
+  ((moveok :initarg :moveok :initform t :reader cell-moveok :type boolean)
+   (opaque :initarg :opaque :initform nil :reader cell-opaque :type boolean)
+   (solid :initarg :solid :initform nil :reader cell-solid :type boolean))
   (:documentation "a map cell"))
-
-(defmethod initialize-instance :after ((cc cell) &key)
-  (slot-defaults cc (moveok . t) (opaque . nil) (solid . nil)))
 
 ; plants block LOS variably (a patient player could cheese this,
 ; assuming nothing is chasing after them)
 (defclass plant (cell)
-  ((los :initarg :los :type uint8_t))
+  ((los :initarg :los :initform 25 :type uint8_t))
   (:documentation "a plant cell"))
-
-(defmethod initialize-instance :after ((pp plant) &key)
-  (slot-defaults pp (los . 25)))
 
 (defmethod cell-opaque ((pp plant)) (ninm (slot-value pp 'los) 100))
 
@@ -49,22 +40,26 @@
    (score :reader food-score :type fixnum))
   (:documentation "food item"))
 
+; TODO these probably should be individual classes if they had more
+; unique properties about them?
 (defun random-food-item ()
   (let ((roll (random 100)))
     (cond ((= roll 0) (values "Staircake" 1000))
           ((< roll 11) (values "Truffle" 100))
           (t (values "Mushroom" 10)))))
 
-(defmethod initialize-instance :before ((ff food) &key)
-  (slot-defaults ff (ch . #\!) (fg . 220) (weight . 1))
+(defmethod initialize-instance :after ((ff food) &key)
   (multiple-value-bind
       (name score)
       (random-food-item)
     (setf (slot-value ff 'name) name)
-    (setf (slot-value ff 'score) score)))
+    (setf (slot-value ff 'score) score)
+    (when (= score 1000)
+      (setf (slot-value ff 'ch) #\>)
+      (setf (slot-value ff 'fg) 254)))) 
 
 (defmacro make-food (col row)
-  `(let ((item (make-instance 'food)))
+  `(let ((item (make-instance 'food :ch #\! :fg 220 :weight 1)))
      (incf *max-score* (food-score item))
      (setf (gethash (cons ,col ,row) *item-locs*) item)))
 
@@ -138,7 +133,7 @@
        (and (array-in-bounds-p *world-map* ,row ,col)
             (aref *seen-map* ,row ,col))
      (format nil "~C[38;5;236m~a~C[m" #\Esc
-             (visible-ch (aref *world-map* ,row ,col)) #\Esc)))
+             (display-ch (aref *world-map* ,row ,col)) #\Esc)))
 
 ; Chebyshev distance
 (defun distance (x0 y0 x1 y1) (max (abs (- x1 x0)) (abs (- y1 y0))))
@@ -283,14 +278,13 @@
 ;
 ; Entities and Animates
 
-(defclass entity nil
-  ((cost :initarg :cost :accessor animate-cost :type uint8_t)
+(defclass entity ()
+  ((cost :initarg :cost :initform 0 :accessor animate-cost :type uint8_t)
    (update :initarg :update :reader animate-update :type function))
   (:documentation "something that uses the energy system"))
 
 (defmethod initialize-instance :after ((ee entity) &key)
-  (unless (slot-boundp ee 'update) (error "no update function provided"))
-  (slot-defaults ee (cost . 0))) ; when their next move is
+  (unless (slot-boundp ee 'update) (error "no update function provided")))
 
 (defclass animate (entity)
   ((row :initarg :row :accessor animate-row :type uint8_t)
@@ -458,7 +452,7 @@
   (let ((cell (aref *world-map* y x)))
     (when (cell-moveok cell)
       (when (gethash (cons x y) *mons-locs*) (error 'done-path))
-      (when (eq (visible-ch cell) #\P)
+      (when (eq (display-ch cell) #\P)
         (setf (aref *world-map* y x) *rubble*)
         (redraw-cell x y t)
         ; monster always redrawn as otherwise would (maybe) need to redo
