@@ -14,6 +14,7 @@
 (define-condition done-path (error) nil)
 
 (deftype uint8_t () '(unsigned-byte 8))
+(deftype uint16_t () '(unsigned-byte 16))
 
 ; ??? alexandria has a conflicting define-constant but SBCL yells that
 ; {+ALT-SCREEN+ is an already defined constant whose value "" is not

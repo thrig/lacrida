@@ -82,7 +82,7 @@
                        nil :opaque t :los 25)))
 (defparameter *gate1*
   (make-instance 'cell :ch #\GREEK_CAPITAL_LETTER_PI :moveok t :fg 251))
-(defparameter *lily* (make-instance 'cell :ch #\BLACK_CLUB_SUIT :fg 255))
+(defparameter *lily* (make-instance 'cell :ch (code-char 9827) :fg 255))
 (defparameter *rubble* (make-instance 'cell :ch #\, :fg 28))
 (defparameter *wall*
   (make-instance 'cell :ch #\# :fg 251 :moveok nil :opaque t :solid t))
@@ -279,7 +279,7 @@
 ; Entities and Animates
 
 (defclass entity ()
-  ((cost :initarg :cost :initform 0 :accessor animate-cost :type uint8_t)
+  ((cost :initarg :cost :initform 0 :accessor animate-cost :type uint16_t)
    (update :initarg :update :reader animate-update :type function))
   (:documentation "something that uses the energy system"))
 

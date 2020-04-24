@@ -2,7 +2,7 @@
   :description "a LISP 2020 spring game jam game"
   :author "Jeremy Mates <jeremy.mates@gmail.com>"
   :license "ISC"
-  :version "0.0.4"
+  :version "0.0.5"
   :serial t
   :depends-on (#:alexandria #:cl-charms)
   :components ((:static-file "README")

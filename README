@@ -8,12 +8,19 @@ requires
 
  * a terminal with dimensions of at least 80x24; a font such as
    https://sourcefoundry.org/hack/ is recommended
- * SBCL (Clozure Common Lisp complains about the "BLACK_CLUB_SUIT" and
-   other fancy characters used in structures.lisp; not sure how to make
-   those portable)
+ * SBCL (or also Clozure Common Lisp run in a terminal)
  * the alexandria and cl-charms packages
 
-assuming Quicklisp is installed and setup:
+installation on OpenBSD might run along the lines of:
+
+    doas pkg_add sbcl gnupg
+    ftp https://beta.quicklisp.org/quicklisp.lisp
+    ftp https://beta.quicklisp.org/quicklisp.lisp.asc
+    gpg --recv-keys 028B5FF7
+    gpg --verify quicklisp.lisp.asc
+    sbcl --eval '(load "quicklisp.lisp")' \
+         --eval '(quicklisp-quickstart:install)' \
+         --eval '(quit)'
 
     cd ~/quicklisp/local-projects
     git clone https://github.com/thrig/lacrida
@@ -28,7 +35,7 @@ assuming Quicklisp is installed and setup:
 
  * keybindings are traditional to rogue(6) though can be fiddled with in
    definitions.lisp if need be
- * the ./compile script should produce a (very large) binary
+ * the ./compile script should produce a (very large) binary with SBCL
 
 sources
 
