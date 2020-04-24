@@ -1,11 +1,13 @@
 lacrida
 =======
 
-a Spring Lisp Game Jam 2020 game (use version 0.0.1 for that code)
+a Spring Lisp Game Jam 2020 game (use version 0.0.1 for that (no way
+ready in time and subsequently fixed) code)
 
 requires
 
- * a terminal with dimensions of at least 80x24
+ * a terminal with dimensions of at least 80x24; a font such as
+   https://sourcefoundry.org/hack/ is recommended
  * SBCL (Clozure Common Lisp complains about the "BLACK_CLUB_SUIT" and
    other fancy characters used in structures.lisp; not sure how to make
    those portable)
@@ -34,3 +36,5 @@ sources
    that has a grid to move around in and not much more
  * shadowcast FOV code adapted from https://github.com/thrig/cl-fov
  * various terminal related code from https://github.com/thrig/cl-minterm
+ * map generation is based on sin-map.lisp from
+   https://github.com/thrig/ministry-of-silly-vaults
