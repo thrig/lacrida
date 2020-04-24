@@ -1,10 +1,10 @@
 (in-package :lacrida)
 
-(defclass visible ()
-  ((ch :initarg :ch :initform #\. :reader display-ch :type character)
-   (fg :initarg :fg :initform 15 :type uint8_t)
-   (bg :initarg :bg :initform 0 :type uint8_t)
-   (weight :initarg :weight :initform 0 :type uint8_t))
+(defclass visible nil
+  ((ch :initarg :ch :initform #\. :accessor display-ch :type character)
+   (fg :initarg :fg :initform 15 :accessor display-fg :type uint8_t)
+   (bg :initarg :bg :initform 0 :accessor display-bg :type uint8_t)
+   (weight :initarg :weight :initform 0 :accessor display-weight :type uint8_t))
   (:documentation "something that can be visible on the map"))
 
 (defmethod display ((vv visible))
@@ -55,8 +55,8 @@
     (setf (slot-value ff 'name) name)
     (setf (slot-value ff 'score) score)
     (when (= score 1000)
-      (setf (slot-value ff 'ch) #\>)
-      (setf (slot-value ff 'fg) 254)))) 
+      (setf (display-ch ff) #\>)
+      (setf (display-fg ff) 254)))) 
 
 (defmacro make-food (col row)
   `(let ((item (make-instance 'food :ch #\! :fg 220 :weight 1)))
@@ -263,7 +263,7 @@
                 (if (coinflip)
                     (random-agent-turn agent)
                     (push (agent-tee agent) agents)))
-               (if (onein 12)
+               (when (onein 12)
                    (setf agents
                            (nconc agents
                                   (new-agents-at (agent-x agent)
@@ -346,7 +346,7 @@
           (at +col-offset+ +row-offset+)
           (princ +show-cursor+)
           (finish-output)
-          (forever
+          (loop
            (let ((key
                   (charms:get-char charms:*standard-window* :ignore-error t)))
              (case key
@@ -416,7 +416,8 @@
 (defmacro symbol-for (key) `(gethash ,key *keymap*))
 
 (defun update-hero (&optional ani)
-  (forever
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
+  (loop
     ; ??? screen blanks if terminal resized
     (let ((key (charms:get-char charms:*standard-window* :ignore-error t)))
       (multiple-value-bind
@@ -440,7 +441,7 @@
          (err (/ (if (> dx dy) dx (- dy)) 2))
          (first t))
     (declare (fixnum sx sy))
-    (forever
+    (loop
       (unless first (funcall linef ani x0 y0))
       (setf first nil)
       (when (and (eq x0 x1) (eq y0 y1)) (return))
@@ -477,6 +478,7 @@
 ; diagonals, fix or instead follow a graph (but monsters getting stuck
 ; is mostly how the player can stay alive...)
 (defun update-golem (ani)
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
   (let* ((col (animate-col ani))
          (row (animate-row ani))
          (d (distance col row *hero-col* *hero-row*)))

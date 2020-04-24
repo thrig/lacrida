@@ -8,7 +8,9 @@ requires
 
  * a terminal with dimensions of at least 80x24; a font such as
    https://sourcefoundry.org/hack/ is recommended
- * SBCL (or also Clozure Common Lisp run in a terminal)
+ * TERM=xterm-256color
+ * SBCL (or also Clozure Common Lisp run in a terminal, and possibly
+   others, but I have not tested them)
  * the alexandria and cl-charms packages
 
 installation on OpenBSD might run along the lines of:

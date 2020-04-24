@@ -2,14 +2,14 @@
 
 ; shadowcast accessory function
 (defun castlight (startx starty radius row light-start light-end xx xy yx yy)
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
   (let ((blocked nil) (new-start 0.0))
     (loop :for j :from row :to radius :do
       (loop :with dy = (- j) :for dx :from dy :to 0 :do (block DIST-LOOP
         (let ((rslope (/ (+ dx 0.5) (- dy 0.5)))
               (lslope (/ (- dx 0.5) (+ dy 0.5))))
-          (cond
-            ((< light-start rslope) (return-from DIST-LOOP))
-            ((> light-end lslope) (loop-finish)))
+          (cond ((< light-start rslope) (return-from DIST-LOOP))
+                ((> light-end lslope) (loop-finish)))
           (let* ((offx (+ (* dx xx) (* dy xy)))
                  (offy (+ (* dx yx) (* dy yy)))
                  (curx (+ startx offx))
@@ -21,7 +21,7 @@
               (setf (aref *view-port* (+ +row-offset+ offy)
                           (+ +col-offset+ offx))
                     (cast-display curx cury)))
-            (if blocked
+            (when blocked
               (if (map-opaque-p curx cury)
                 (progn
                   (setf new-start rslope)
@@ -45,6 +45,7 @@
        #\Space))
 
 (defun shadowcast (startx starty radius)
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
   (setf *old-view* (copy-array *view-port*))
   (setf *view-port*
           (make-array (list +show-rows+ +show-cols+) :initial-element nil))
@@ -62,10 +63,11 @@
           (unless (equal show (aref *old-view* r c))
             (emit-at c r show)))))))
 
+; this, alas, needs to nuke any items/monsters now within the vault
+; (Brogue by contrast does items last, after the level map is already
+; built with rooms and so forth)
 (defun place-vault (vault col row)
-  (destructuring-bind
-      (vrows vcols)
-      (array-dimensions vault)
+  (destructuring-bind (vrows vcols) (array-dimensions vault)
     (dotimes (r vrows)
       (dotimes (c vcols)
         (setf (aref *world-map* (+ row r) (+ col c))
@@ -74,27 +76,18 @@
           (remhash loc *item-locs*)
           (remhash loc *mons-locs*))))))
 
-(defmacro ground (r c off1 off2 mul1 mul2)
+; the random here adds some noise to the larger-scale trig outputs
+(defmacro random-ground (r c off1 off2 mul1 mul2)
   `(let ((val
-          (+ (cos (* (- r off1) +mratio+ (1+ (random 2))))
-             (sin (* (- c off2) +mratio+ (1+ (random 3))))
-             (cos (* (- r off2) +mratio+ mul1))
-             (sin (* (- c off1) +mratio+ mul2)))))
+          (+ (cos (* (- ,r ,off1) +mratio+ (1+ (random 2))))
+             (sin (* (- ,c ,off2) +mratio+ (1+ (random 3))))
+             (cos (* (- ,r ,off2) +mratio+ ,mul1))
+             (sin (* (- ,c ,off1) +mratio+ ,mul2)))))
      (cond ((> val 0.5) (pick *fungus*)) ((> val -0.9) *floor*) (t *water*))))
 
-; entry (and exit...) point
-(defun random-edge-point ()
-  (if (coinflip)
-    (values (if (coinflip) 0 (1- +map-cols+)) (+ 2 (random (- +map-rows+ 4))))
-    (values (+ 2 (random (- +map-cols+ 4))) (if (coinflip) 0 (1- +map-rows+)))))
-
-; no monsters too close to the entry point at the start
-; NOTE will run increasingly forever if there are too many monsters
-(defun min-monster-dist (col row)
-  (loop :for k :being :the :hash-key :in *mons-locs*
-        :minimizing (distance col row (car k) (cdr k))))
-
-(defun generate-world ()
+; fugnus/floor/water placement are randomized by sin functions scaled to
+; the level map; this (if done right) makes clumps of similar cells
+(defun ground-by-trig ()
   (let ((off1 (random +map-rows+))
         (off2 (random +map-rows+))
         (mul1 (+ 4 (random 7)))
@@ -102,7 +95,11 @@
     (dotimes (r +map-rows+)
       (dotimes (c +map-cols+)
         (setf (aref *world-map* r c)
-              (ground r c off1 off2 mul1 mul2)))))
+              (random-ground r c off1 off2 mul1 mul2))))))
+
+; this also causes corridors to be drawn to make all items (and
+; monsters!) reachable even if there is water around the item. maybe.
+(defun monsters-and-items ()
   (let ((items +item-count+)
         (monst +mons-count+)
         (total (* (- +map-rows+ 2) (- +map-cols+ 2))))
@@ -110,19 +107,19 @@
       (loop :for c :from 1 :below (1- +map-cols+) :do
         (when (< (random total) items)
           (make-food c r)
-          (if (not (aref *agent-seen* r c))
-            (progn
-              (setf (aref *world-map* r c) *floor*)
-              (run-amok (new-agents-at c r) #'update-agent)))
+          (unless (aref *agent-seen* r c)
+            (setf (aref *world-map* r c) *floor*)
+            (run-amok (new-agents-at c r) #'update-agent))
           (decf items))
         (when (< (random total) monst)
           (push (make-golem c r) *animates*)
-          (if (not (aref *agent-seen* r c))
-            (progn
-              (setf (aref *world-map* r c) *floor*)
-              (run-amok (new-agents-at c r) #'update-agent)))
+          (unless (aref *agent-seen* r c)
+            (setf (aref *world-map* r c) *floor*)
+            (run-amok (new-agents-at c r) #'update-agent))
           (decf monst))
-        (decf total))))
+        (decf total)))))
+
+(defun border-wall ()
   (loop :for r :from 1 :below (1- +map-rows+) :do
     (setf (aref *world-map* r 0) *wall*)
     (setf (aref *world-map* r 1) *floor*)
@@ -136,10 +133,23 @@
   (setf (aref *world-map* 0 0) *wall*)
   (setf (aref *world-map* 0 (1- +map-cols+)) *wall*)
   (setf (aref *world-map* (1- +map-rows+) 0) *wall*)
-  (setf (aref *world-map* (1- +map-rows+) (1- +map-cols+)) *wall*)
-  (forever
-    (multiple-value-bind (col row)
-      (random-edge-point)
+  (setf (aref *world-map* (1- +map-rows+) (1- +map-cols+)) *wall*))
+
+; potential entry (and exit...) point
+(defun random-edge-point ()
+  (if (coinflip)
+    (values (if (coinflip) 0 (1- +map-cols+)) (+ 2 (random (- +map-rows+ 4))))
+    (values (+ 2 (random (- +map-cols+ 4))) (if (coinflip) 0 (1- +map-rows+)))))
+
+; no monsters too close to the entry point at the start
+; NOTE will run increasingly forever if there are too many monsters
+(defun min-monster-dist (col row)
+  (loop :for k :being :the :hash-key :in *mons-locs*
+        :minimizing (distance col row (car k) (cdr k))))
+
+(defun entry-gate ()
+  (loop
+    (multiple-value-bind (col row) (random-edge-point)
       (when (> (min-monster-dist col row) *hero-fov*)
         (setf (aref *world-map* row col) *gate1*)
         (push (make-hero) *animates*)
@@ -147,19 +157,29 @@
         (setf *hero-row* row)
         (setf *exit-col* col)
         (setf *exit-row* row)
-        ; KLUGE clear water around the entrance so there's lower odds of
-        ; a stuck golem that cannot be coaxed out due to the current
-        ; line-walking code
+        ; KLUGE clear an area around the entrance so there's lower odds
+        ; of a stuck exit-camping Golem that cannot be coaxed out due to
+        ; the current line-walking code
+        ; TODO need better way to ID walls by, well, ID and not the wall
+        ; character, or instead to draw the border walls afterwards, but
+        ; without that draw trashing our entry gate
         (loop :for rr :from (- row 3) :to (+ row 3) :do
           (loop :for cc :from (- col 3) :to (+ col 3) :do
-            (when (and (map-in-bounds-p cc rr)
-                       (eq #\~ (display-ch (aref *world-map* rr cc))))
-              (setf (aref *world-map* rr cc) *floor*))))
-        (return))))
-  (when (onein 100)
+            (when (map-in-bounds-p cc rr)
+              (let ((cell (aref *world-map* rr cc)))
+                (when (and
+                        (not (eq #\# (display-ch cell)))
+                        (not (cell-moveok (aref *world-map* rr cc))))
+                  (setf (aref *world-map* rr cc) *floor*))))))
+        (return)))))
+
+(defun maybe-add-vault ()
+  (when (onein 20)
     (let ((col (+ 10 (random (- +map-cols+ 20))))
           (row (+ 10 (random (- +map-rows+ 20)))))
-      (place-vault (if (coinflip) *dolmen* *pond*) col row)))
+      (place-vault (if (coinflip) *dolmen* *pond*) col row))))
+
+(defun help-text ()
   (colorpair 250 0)
   (emit-at (1+ +show-cols+) 1 (format nil "Lacrida - The Hungry Halfling"))
   (emit-at (1+ +show-cols+) 3 (format nil "movement keys, and other commands:"))
@@ -178,6 +198,14 @@
   (post-message "There is a note written here:")
   (post-message "  \"Absolutely no scrumping\" -- ~a" *wizard*))
 
+(defun generate-world ()
+  (ground-by-trig)
+  (monsters-and-items)
+  (border-wall)
+  (entry-gate)
+  (maybe-add-vault)
+  (help-text))
+
 (defun draw-bg ()
   (dotimes (r 24) (at 1 (1+ r)) (dotimes (c 80) (princ #\Space))))
 
@@ -187,6 +215,7 @@
         :finally (return min)))
 
 (defun game-loop ()
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
   (setq *random-state* (make-random-state t))
   (setf *wizard* (wizard-name))
   (colorpair 0 0)
@@ -197,7 +226,7 @@
                        :update #'update-alarm) *animates*)
   (shadowcast *hero-col* *hero-row* *hero-fov*)
   (finish-output)
-  (forever
+  (loop
     (let ((min-cost (least-cost *animates*)))
       (dolist (ani *animates*)
         (let ((new-cost (- (animate-cost ani) min-cost)))

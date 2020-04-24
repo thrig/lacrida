@@ -1,5 +1,7 @@
 (in-package :lacrida)
 
+(proclaim '(optimize speed))
+
 ; traditional rogue(6) keybindings
 (defparameter *keymap*
   (alist-hash-table
@@ -66,8 +68,6 @@
 (defmacro onein (n) `(zerop (random ,n)))
 (defmacro ninm (n m) `(< (random ,m) ,n))
 (defmacro pick (from) `(nth (random (list-length ,from)) ,from))
-
-(defmacro forever (&body body) `(do () (nil) ,@body))
 
 ; map viewport concerns
 (defconstant +show-rows+  18)
