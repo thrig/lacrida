@@ -30,6 +30,12 @@ installation on OpenBSD might run along the lines of:
     printf "\033[8;24;80t"
     ./run
 
+note that SBCL likes to use W^X memory operations, so /usr/local on
+OpenBSD will likely need to be mounted wxallowed:
+
+    $ grep /usr/local /etc/fstab
+    /dev/sd0h /usr/local ffs rw,nodev,wxallowed 1 2
+
  * there is minimal documentation; copy lacrida.6 into a suitable
    MANPATH directory (e.g. /usr/local/share/man/man6) and then run
 
