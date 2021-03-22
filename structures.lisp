@@ -330,8 +330,9 @@
 (defparameter *monstmsg*
   '("A monstrous figure in the brutalist style."
     "The clay figure does not respond to your touch."
-    "The clay figure is cold and solid."))
-    "Who would even pay for a statue like this?"
+    "The clay figure is cold and solid."
+    "Only a wizard could dream up this sort of ornament for their garden."
+    "Who would even pay for a statue like this?"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
