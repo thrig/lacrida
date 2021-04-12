@@ -18,10 +18,7 @@
 (deftype uint8_t () '(unsigned-byte 8))
 (deftype uint16_t () '(unsigned-byte 16))
 
-; ??? alexandria has a conflicting define-constant but SBCL yells that
-; {+ALT-SCREEN+ is an already defined constant whose value "" is not
-; equal to the provided initial value "" under EQL."} if I use it...
-(defmacro mdefine-constant (name value &optional doc)
+(defmacro define-constant (name value &optional doc)
   `(defconstant ,name
      (if (boundp ',name) (symbol-value ',name) ,value)
      ,@(when doc (list doc))))
@@ -31,16 +28,16 @@
 ; following to "paint" into that
 ;
 ; ANSI or XTerm Control Sequences - https://invisible-island.net/xterm/
-(mdefine-constant +alt-screen+   #.(format nil "~C[?1049h" #\Esc))
-(mdefine-constant +clear-screen+ #.(format nil "~C[1;1H~C[2J" #\Esc #\Esc))
-(mdefine-constant +clear-left+   #.(format nil "~C[1K"   #\Esc))
-(mdefine-constant +clear-line+   #.(format nil "~C[2K"   #\Esc))
-(mdefine-constant +clear-right+  #.(format nil "~C[K"    #\Esc))
-(mdefine-constant +hide-cursor+  #.(format nil "~C[?25l" #\Esc))
-(mdefine-constant +hide-pointer+ #.(format nil "~C[>2p"  #\Esc))
-(mdefine-constant +show-cursor+  #.(format nil "~C[?25h" #\Esc))
-(mdefine-constant +term-norm+    #.(format nil "~C[m"    #\Esc))
-(mdefine-constant +unalt-screen+ #.(format nil "~C[?1049l" #\Esc))
+(define-constant +alt-screen+   #.(format nil "~C[?1049h" #\Esc))
+(define-constant +clear-screen+ #.(format nil "~C[1;1H~C[2J" #\Esc #\Esc))
+(define-constant +clear-left+   #.(format nil "~C[1K"   #\Esc))
+(define-constant +clear-line+   #.(format nil "~C[2K"   #\Esc))
+(define-constant +clear-right+  #.(format nil "~C[K"    #\Esc))
+(define-constant +hide-cursor+  #.(format nil "~C[?25l" #\Esc))
+(define-constant +hide-pointer+ #.(format nil "~C[>2p"  #\Esc))
+(define-constant +show-cursor+  #.(format nil "~C[?25h" #\Esc))
+(define-constant +term-norm+    #.(format nil "~C[m"    #\Esc))
+(define-constant +unalt-screen+ #.(format nil "~C[?1049l" #\Esc))
 
 (defmacro at (col row)
   `(format t "~C[~d;~dH" #\Esc ,row ,col))

@@ -103,7 +103,7 @@
 
 (defparameter *view-port* (make-array (list +show-rows+ +show-cols+)
                                 :initial-element nil))
-(mdefine-constant +hero+ #.(format nil "~C[1;37;40m@~C[m" #\Esc #\Esc))
+(define-constant +hero+ #.(format nil "~C[1;37;40m@~C[m" #\Esc #\Esc))
 (defmacro heroic-viewport ()
   `(setf (aref *view-port* +row-offset+ +col-offset+) +hero+))
 
